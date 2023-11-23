@@ -2,6 +2,7 @@ package com.dtex.camera
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -11,6 +12,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
@@ -21,6 +23,8 @@ import com.dtex.camera.databinding.FragmentCameraBinding
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 class CameraFragment : Fragment() {
 
@@ -41,6 +45,7 @@ class CameraFragment : Fragment() {
         }
 
     private var imageCapture: ImageCapture? = null
+    private lateinit var cameraExecutor: ExecutorService
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,6 +54,8 @@ class CameraFragment : Fragment() {
         } else {
             requestPermissionsLauncher.launch(REQUIRED_PERMISSIONS)
         }
+
+        cameraExecutor = Executors.newSingleThreadExecutor()
     }
 
     override fun onCreateView(
@@ -85,6 +92,18 @@ class CameraFragment : Fragment() {
             imageCapture = ImageCapture.Builder()
                 .build()
 
+            val imageAnalyzer = ImageAnalysis.Builder()
+                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                .build()
+                .also {
+                    it.setAnalyzer(cameraExecutor) { image ->
+                        val bitmap =
+                            Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
+                        image.use { bitmap.copyPixelsFromBuffer(image.planes[0].buffer) }
+                        image.close()
+                    }
+                }
+
             // Select back camera as a default
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
@@ -93,7 +112,9 @@ class CameraFragment : Fragment() {
                 cameraProvider.unbindAll()
 
                 // Bind use cases to camera
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
+                cameraProvider.bindToLifecycle(
+                    this, cameraSelector, preview, imageCapture, imageAnalyzer
+                )
             } catch (exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
             }
@@ -137,6 +158,7 @@ class CameraFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+        cameraExecutor.shutdown()
     }
 
     companion object {
