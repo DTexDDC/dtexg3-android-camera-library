@@ -2,6 +2,7 @@ package com.dtex.cameraexample
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -16,6 +17,8 @@ class MainActivity : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 val data = result.data
+                val photoUri: Uri? = data?.parcelable("photoUri")
+                binding.imageView.setImageURI(photoUri)
             }
         }
 
