@@ -19,6 +19,7 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.commit
 import com.dtex.camera.databinding.FragmentCameraBinding
 import java.io.File
@@ -45,6 +46,7 @@ class CameraFragment : Fragment() {
             }
         }
 
+    private val viewModel: CameraViewModel by activityViewModels()
     private var imageCapture: ImageCapture? = null
     private lateinit var cameraExecutor: ExecutorService
 
@@ -150,6 +152,7 @@ class CameraFragment : Fragment() {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                     val msg = "Photo capture succeeded: ${output.savedUri}"
                     Log.d(TAG, msg)
+                    viewModel.photoUri = output.savedUri
                     // Navigate to Review
                     parentFragmentManager.commit {
                         setReorderingAllowed(true)
