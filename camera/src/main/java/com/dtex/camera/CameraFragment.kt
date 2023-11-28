@@ -15,6 +15,7 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
@@ -23,6 +24,10 @@ import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.commit
 import com.dtex.camera.databinding.FragmentCameraBinding
 import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.support.image.ImageProcessor
+import org.tensorflow.lite.support.image.TensorImage
+import org.tensorflow.lite.support.image.ops.ResizeOp
+import org.tensorflow.lite.support.image.ops.Rot90Op
 import java.io.File
 import java.io.FileInputStream
 import java.nio.channels.FileChannel
@@ -54,6 +59,9 @@ class CameraFragment : Fragment() {
     private lateinit var cameraExecutor: ExecutorService
 
     private lateinit var interpreter: Interpreter
+    private val inputSize = 512
+    private val detectionsSize = 25
+    private var isProcessing = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -121,10 +129,8 @@ class CameraFragment : Fragment() {
                 .build()
                 .also {
                     it.setAnalyzer(cameraExecutor) { image ->
-                        val bitmap =
-                            Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
-                        image.use { bitmap.copyPixelsFromBuffer(image.planes[0].buffer) }
-                        image.close()
+                        if (isProcessing) return@setAnalyzer
+                        processFrame(image)
                     }
                 }
 
@@ -143,6 +149,57 @@ class CameraFragment : Fragment() {
                 Log.e(TAG, "Use case binding failed", exc)
             }
         }, ContextCompat.getMainExecutor(requireContext()))
+    }
+
+    private fun processFrame(image: ImageProxy) {
+        isProcessing = true
+        try {
+            val bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
+            image.use { bitmap.copyPixelsFromBuffer(image.planes[0].buffer) }
+            // Preprocess image to input tensor size
+            val imageRotation = image.imageInfo.rotationDegrees
+            val imageProcessor = ImageProcessor.Builder()
+                .add(Rot90Op(-imageRotation / 90))
+                .add(ResizeOp(inputSize, inputSize, ResizeOp.ResizeMethod.NEAREST_NEIGHBOR))
+                .build()
+            // Create inputs and outputs and invoke model
+            val tensorImage = imageProcessor.process(TensorImage.fromBitmap(bitmap))
+            val inputs = arrayOf(tensorImage.buffer)
+            val scores = arrayOf(FloatArray(detectionsSize))
+            val boundingBoxes = arrayOf(Array(detectionsSize) { FloatArray(4) })
+            val detectionCount = FloatArray(1)
+            val categories = arrayOf(FloatArray(detectionsSize))
+            val outputs = mapOf(
+                0 to scores,
+                1 to boundingBoxes,
+                2 to detectionCount,
+                3 to categories
+            )
+            interpreter.runForMultipleInputsOutputs(inputs, outputs)
+            // Return outputs
+            Log.d(TAG, "scores: " + scores[0])
+            Log.d(TAG, "boundingBoxes: " + processBoundingBoxes(boundingBoxes[0]))
+            Log.d(TAG, "detectionCount: " + detectionCount[0].toInt())
+            Log.d(TAG, "categories: " + categories[0])
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        image.close()
+        isProcessing = false
+    }
+
+    private fun processBoundingBoxes(input: Array<FloatArray>): MutableList<MutableMap<String, Double>> {
+        val out = mutableListOf<MutableMap<String, Double>>()
+        for (bb in input) {
+            val map = mutableMapOf<String, Double>().apply {
+                put("x", bb[1].toDouble())
+                put("y", bb[0].toDouble())
+                put("width", bb[3].toDouble() - bb[1].toDouble())
+                put("height", bb[2].toDouble() - bb[0].toDouble())
+            }
+            out.add(map)
+        }
+        return out
     }
 
     private fun takePhoto() {
