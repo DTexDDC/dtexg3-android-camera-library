@@ -63,6 +63,13 @@ class CameraFragment : Fragment() {
     private val detectionsSize = 25
     private var isProcessing = false
 
+    private val previewWidth: Int by lazy {
+        resources.displayMetrics.widthPixels
+    }
+    private val previewHeight: Int by lazy {
+        (previewWidth / 3) * 4
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Configure TensorFlow model
@@ -181,6 +188,14 @@ class CameraFragment : Fragment() {
             Log.d(TAG, "boundingBoxes: " + processBoundingBoxes(boundingBoxes[0]))
             Log.d(TAG, "detectionCount: " + detectionCount[0].toInt())
             Log.d(TAG, "categories: " + categories[0])
+
+            val maxScoreIndex = scores[0].indices.maxBy { scores[0][it] }
+            val score = scores[0][maxScoreIndex]
+            val boundingBox = processBoundingBoxes(boundingBoxes[0])[maxScoreIndex]
+            val x = boundingBox["x"]!! * previewWidth
+            val y = boundingBox["y"]!! * previewHeight
+            val width = boundingBox["width"]!! * previewWidth
+            val height = boundingBox["height"]!! * previewHeight
         } catch (e: Exception) {
             e.printStackTrace()
         }
