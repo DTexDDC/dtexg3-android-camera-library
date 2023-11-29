@@ -3,6 +3,10 @@ package com.dtex.camera
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.PorterDuff
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -19,6 +23,7 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import androidx.core.view.doOnLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.commit
@@ -70,6 +75,9 @@ class CameraFragment : Fragment() {
         (previewWidth / 3) * 4
     }
 
+    private lateinit var canvas: Canvas
+    private lateinit var paint: Paint
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Configure TensorFlow model
@@ -108,6 +116,21 @@ class CameraFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.captureButton.setOnClickListener { takePhoto() }
+
+        binding.canvasImageView.doOnLayout {
+            val width = it.measuredWidth
+            val height = it.measuredHeight
+
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+
+            canvas = Canvas(bitmap)
+
+            paint = Paint()
+            paint.color = Color.parseColor("#00DD00")
+            paint.strokeWidth = 5F
+
+            binding.canvasImageView.setImageBitmap(bitmap)
+        }
     }
 
     private fun hasPermissions() = REQUIRED_PERMISSIONS.all {
@@ -161,6 +184,8 @@ class CameraFragment : Fragment() {
     private fun processFrame(image: ImageProxy) {
         isProcessing = true
         try {
+            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
+            // Convert image to bitmap
             val bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
             image.use { bitmap.copyPixelsFromBuffer(image.planes[0].buffer) }
             // Preprocess image to input tensor size
@@ -192,10 +217,18 @@ class CameraFragment : Fragment() {
             val maxScoreIndex = scores[0].indices.maxBy { scores[0][it] }
             val score = scores[0][maxScoreIndex]
             val boundingBox = processBoundingBoxes(boundingBoxes[0])[maxScoreIndex]
-            val x = boundingBox["x"]!! * previewWidth
-            val y = boundingBox["y"]!! * previewHeight
-            val width = boundingBox["width"]!! * previewWidth
-            val height = boundingBox["height"]!! * previewHeight
+            val x = boundingBox["x"]!!.toFloat() * previewWidth
+            val y = boundingBox["y"]!!.toFloat() * previewHeight
+            val width = boundingBox["width"]!!.toFloat() * previewWidth
+            val height = boundingBox["height"]!!.toFloat() * previewHeight
+
+            if (score > 0.5) {
+                canvas.drawLine(x, y, x + width, y, paint)
+                canvas.drawLine(x + width, y, x + width, y + height, paint)
+                canvas.drawLine(x + width, y + height, x, y + height, paint)
+                canvas.drawLine(x, y + height, x, y, paint)
+                binding.canvasImageView.invalidate()
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
