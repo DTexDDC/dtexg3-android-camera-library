@@ -131,6 +131,15 @@ class CameraFragment : Fragment() {
 
             binding.canvasImageView.setImageBitmap(bitmap)
         }
+
+        viewModel.isDetected.observe(viewLifecycleOwner) {
+            binding.detectionStatusView.setCardBackgroundColor(
+                ContextCompat.getColor(
+                    requireContext(),
+                    if (it) R.color.green else R.color.red
+                )
+            )
+        }
     }
 
     private fun hasPermissions() = REQUIRED_PERMISSIONS.all {
@@ -223,11 +232,14 @@ class CameraFragment : Fragment() {
             val height = boundingBox["height"]!!.toFloat() * previewHeight
 
             if (score > 0.5) {
+                viewModel.isDetected.postValue(true)
                 canvas.drawLine(x, y, x + width, y, paint)
                 canvas.drawLine(x + width, y, x + width, y + height, paint)
                 canvas.drawLine(x + width, y + height, x, y + height, paint)
                 canvas.drawLine(x, y + height, x, y, paint)
                 binding.canvasImageView.invalidate()
+            } else {
+                viewModel.isDetected.postValue(false)
             }
         } catch (e: Exception) {
             e.printStackTrace()
