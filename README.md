@@ -37,7 +37,7 @@ Step 2. Add the dependency
 ````
 dependencies {
     ...
-    implementation 'com.github.vinchamp77:demo-simple-android-lib:0.0.1'
+    implementation 'com.github.DTexDDC:dtexg3-android-camera-library:0.0.1'
 }
 ````
 
@@ -45,7 +45,7 @@ dependencies {
 ````
 dependencies {
     ...
-    implementation ("com.github.vinchamp77:demo-simple-android-lib:0.0.1")
+    implementation ("com.github.DTexDDC:dtexg3-android-camera-library:0.0.1")
 }
 ````
 
