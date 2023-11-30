@@ -23,6 +23,7 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.doOnLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -77,6 +78,18 @@ class CameraFragment : Fragment() {
 
     private lateinit var canvas: Canvas
     private lateinit var paint: Paint
+
+    private val animationTask: Runnable by lazy {
+        Runnable {
+            // Flash white animation
+            binding.overlay.background = Color.argb(150, 255, 255, 255).toDrawable()
+            // Wait for ANIMATION_FAST_MILLIS
+            binding.overlay.postDelayed({
+                // Remove white flash animation
+                binding.overlay.background = null
+            }, 50L)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -279,6 +292,8 @@ class CameraFragment : Fragment() {
         // Create output options object which contains file + metadata
         val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile)
             .build()
+
+        binding.viewFinder.post(animationTask)
 
         // Set up image capture listener, which is triggered after photo has
         // been taken
