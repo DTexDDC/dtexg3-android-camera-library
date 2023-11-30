@@ -82,7 +82,7 @@ class CameraFragment : Fragment() {
         super.onCreate(savedInstanceState)
         // Configure TensorFlow model
         try {
-            val fileDescriptor = requireContext().assets.openFd("aldi.tflite")
+            val fileDescriptor = requireContext().assets.openFd("ireland_shelf.tflite")
             val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
             val fileChannel = inputStream.channel
             val byteBuffer = fileChannel.map(
@@ -193,7 +193,6 @@ class CameraFragment : Fragment() {
     private fun processFrame(image: ImageProxy) {
         isProcessing = true
         try {
-            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
             // Convert image to bitmap
             val bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
             image.use { bitmap.copyPixelsFromBuffer(image.planes[0].buffer) }
@@ -230,7 +229,10 @@ class CameraFragment : Fragment() {
             val y = boundingBox["y"]!!.toFloat() * previewHeight
             val width = boundingBox["width"]!!.toFloat() * previewWidth
             val height = boundingBox["height"]!!.toFloat() * previewHeight
+            Log.d(TAG, "previewWidth: $previewWidth, previewHeight: $previewHeight")
+            Log.d(TAG, "x: $x, y: $y, width: $width, height: $height")
 
+            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
             if (score > 0.5) {
                 viewModel.isDetected.postValue(true)
                 canvas.drawLine(x, y, x + width, y, paint)
