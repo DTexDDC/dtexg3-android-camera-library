@@ -230,10 +230,11 @@ class CameraFragment : Fragment() {
             val width = boundingBox["width"]!!.toFloat() * previewWidth
             val height = boundingBox["height"]!!.toFloat() * previewHeight
             Log.d(TAG, "previewWidth: $previewWidth, previewHeight: $previewHeight")
+            Log.d(TAG, "score: $score")
             Log.d(TAG, "x: $x, y: $y, width: $width, height: $height")
 
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
-            if (score > 0.5) {
+            if (score > 0.1) {
                 viewModel.isDetected.postValue(true)
                 canvas.drawLine(x, y, x + width, y, paint)
                 canvas.drawLine(x + width, y, x + width, y + height, paint)
