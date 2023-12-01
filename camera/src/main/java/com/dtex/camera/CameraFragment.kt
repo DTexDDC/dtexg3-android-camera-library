@@ -231,51 +231,42 @@ class CameraFragment : Fragment() {
             interpreter.runForMultipleInputsOutputs(inputs, outputs)
             // Return outputs
             Log.d(TAG, "scores: " + scores[0])
-            Log.d(TAG, "boundingBoxes: " + processBoundingBoxes(boundingBoxes[0]))
+            Log.d(TAG, "boundingBoxes: " + boundingBoxes[0])
             Log.d(TAG, "detectionCount: " + detectionCount[0].toInt())
             Log.d(TAG, "categories: " + categories[0])
 
-            val maxScoreIndex = scores[0].indices.maxBy { scores[0][it] }
-            val score = scores[0][maxScoreIndex]
-            val boundingBox = processBoundingBoxes(boundingBoxes[0])[maxScoreIndex]
-            val x = boundingBox["x"]!!.toFloat() * previewWidth
-            val y = boundingBox["y"]!!.toFloat() * previewHeight
-            val width = boundingBox["width"]!!.toFloat() * previewWidth
-            val height = boundingBox["height"]!!.toFloat() * previewHeight
-            Log.d(TAG, "previewWidth: $previewWidth, previewHeight: $previewHeight")
-            Log.d(TAG, "score: $score")
-            Log.d(TAG, "x: $x, y: $y, width: $width, height: $height")
-
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
-            if (score > 0.1) {
-                viewModel.isDetected.postValue(true)
-                canvas.drawLine(x, y, x + width, y, paint)
-                canvas.drawLine(x + width, y, x + width, y + height, paint)
-                canvas.drawLine(x + width, y + height, x, y + height, paint)
-                canvas.drawLine(x, y + height, x, y, paint)
-                binding.canvasImageView.invalidate()
-            } else {
+            val sortedIndex = scores[0].indices
+                .filter { scores[0][it] > 0.1 }
+                .sortedWith { a, b ->
+                    when {
+                        scores[0][a] > scores[0][b] -> -1
+                        scores[0][a] < scores[0][b] -> 1
+                        else -> 0
+                    }
+                }
+                .take(5)
+            if (sortedIndex.isEmpty()) {
                 viewModel.isDetected.postValue(false)
+            } else {
+                viewModel.isDetected.postValue(true)
+                sortedIndex.forEach { index ->
+                    val x1 = boundingBoxes[0][index][1] * previewWidth
+                    val y1 = boundingBoxes[0][index][0] * previewHeight
+                    val x2 = boundingBoxes[0][index][3] * previewWidth
+                    val y2 = boundingBoxes[0][index][2] * previewHeight
+                    canvas.drawLine(x1, y1, x2, y1, paint)
+                    canvas.drawLine(x2, y1, x2, y2, paint)
+                    canvas.drawLine(x2, y2, x1, y2, paint)
+                    canvas.drawLine(x1, y2, x1, y1, paint)
+                }
+                binding.canvasImageView.invalidate()
             }
         } catch (e: Exception) {
             e.printStackTrace()
         }
         image.close()
         isProcessing = false
-    }
-
-    private fun processBoundingBoxes(input: Array<FloatArray>): MutableList<MutableMap<String, Double>> {
-        val out = mutableListOf<MutableMap<String, Double>>()
-        for (bb in input) {
-            val map = mutableMapOf<String, Double>().apply {
-                put("x", bb[1].toDouble())
-                put("y", bb[0].toDouble())
-                put("width", bb[3].toDouble() - bb[1].toDouble())
-                put("height", bb[2].toDouble() - bb[0].toDouble())
-            }
-            out.add(map)
-        }
-        return out
     }
 
     private fun takePhoto() {
