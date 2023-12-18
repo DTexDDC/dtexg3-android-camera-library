@@ -1,12 +1,17 @@
 package com.dtex.camera
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PorterDuff
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -42,7 +47,7 @@ import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-class CameraFragment : Fragment() {
+class CameraFragment : Fragment(), SensorEventListener {
 
     private var _binding: FragmentCameraBinding? = null
     private val binding get() = _binding!!
@@ -91,6 +96,11 @@ class CameraFragment : Fragment() {
         }
     }
 
+    private lateinit var sensorManager: SensorManager
+    private var rotationVectorSensor: Sensor? = null
+    private val rotationMatrix = FloatArray(9)
+    private val rotationResult = FloatArray(3)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -99,6 +109,9 @@ class CameraFragment : Fragment() {
         } else {
             requestPermissionsLauncher.launch(REQUIRED_PERMISSIONS)
         }
+
+        sensorManager = requireContext().getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        rotationVectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
 
         cameraExecutor = Executors.newSingleThreadExecutor()
     }
@@ -139,6 +152,18 @@ class CameraFragment : Fragment() {
                 )
             )
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        rotationVectorSensor?.let { sensor ->
+            sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        sensorManager.unregisterListener(this)
     }
 
     /**
@@ -330,6 +355,20 @@ class CameraFragment : Fragment() {
                 }
             }
         )
+    }
+
+    override fun onSensorChanged(event: SensorEvent?) {
+        if (event?.sensor?.type == Sensor.TYPE_ROTATION_VECTOR) {
+            SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
+            SensorManager.getOrientation(rotationMatrix, rotationResult)
+            // val alpha = (-rotationResult[0]).toDouble()
+            val beta = (-rotationResult[1]).toDouble()
+            // val gamma = rotationResult[2].toDouble()
+            binding.rotationTextView.text = beta.toString()
+        }
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
     }
 
     override fun onDestroyView() {
