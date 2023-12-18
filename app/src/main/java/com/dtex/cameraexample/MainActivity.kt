@@ -1,12 +1,11 @@
 package com.dtex.cameraexample
 
 import android.app.Activity
-import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import com.dtex.camera.CameraActivity
+import com.dtex.camera.DtexCamera
 import com.dtex.cameraexample.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -17,7 +16,7 @@ class MainActivity : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 val data = result.data
-                val photoUri: Uri? = data?.parcelable("photoUri")
+                val photoUri: Uri? = DtexCamera.getPhotoUri(data)
                 binding.imageView.setImageURI(photoUri)
             }
         }
@@ -28,8 +27,11 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.cameraButton.setOnClickListener {
-            val intent = Intent(this, CameraActivity::class.java)
-            cameraLauncher.launch(intent)
+            DtexCamera.with(this)
+                .modelFile("model.tflite")
+                .createIntent { intent ->
+                    cameraLauncher.launch(intent)
+                }
         }
     }
 }

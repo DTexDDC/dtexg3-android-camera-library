@@ -93,21 +93,6 @@ class CameraFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Configure TensorFlow model
-        try {
-            val fileDescriptor = requireContext().assets.openFd("ireland_shelf.tflite")
-            val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
-            val fileChannel = inputStream.channel
-            val byteBuffer = fileChannel.map(
-                FileChannel.MapMode.READ_ONLY,
-                fileDescriptor.startOffset,
-                fileDescriptor.declaredLength
-            )
-            interpreter = Interpreter(byteBuffer)
-            interpreter.allocateTensors()
-        } catch (e: Exception) {
-            Toast.makeText(requireContext(), e.message, Toast.LENGTH_SHORT).show()
-        }
 
         if (hasPermissions()) {
             startCamera()
@@ -128,6 +113,7 @@ class CameraFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        configureModel()
         binding.captureButton.setOnClickListener { takePhoto() }
 
         binding.canvasImageView.doOnLayout {
@@ -152,6 +138,31 @@ class CameraFragment : Fragment() {
                     if (it) R.color.green else R.color.red
                 )
             )
+        }
+    }
+
+    /**
+     * Configure TensorFlow model
+     * */
+    private fun configureModel() {
+        viewModel.assetFileName?.let { assetFileName ->
+            try {
+                val fileDescriptor = requireContext().assets.openFd(assetFileName)
+                val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
+                val fileChannel = inputStream.channel
+                val byteBuffer = fileChannel.map(
+                    FileChannel.MapMode.READ_ONLY,
+                    fileDescriptor.startOffset,
+                    fileDescriptor.declaredLength
+                )
+                interpreter = Interpreter(byteBuffer)
+                interpreter.allocateTensors()
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), e.message, Toast.LENGTH_SHORT).show()
+            }
+        } ?: run {
+            Toast.makeText(requireContext(), "Model file is not provided", Toast.LENGTH_SHORT)
+                .show()
         }
     }
 

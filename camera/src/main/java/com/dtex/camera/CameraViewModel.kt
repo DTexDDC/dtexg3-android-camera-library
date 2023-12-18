@@ -5,6 +5,8 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 
 class CameraViewModel : ViewModel() {
+    var assetFileName: String? = null
+
     var photoUri: Uri? = null
     val isDetected: MutableLiveData<Boolean> by lazy {
         MutableLiveData<Boolean>(false)
