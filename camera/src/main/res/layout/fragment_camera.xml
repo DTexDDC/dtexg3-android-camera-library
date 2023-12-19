@@ -37,10 +37,20 @@
         android:id="@+id/rotation_text_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
         android:textSize="14sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/preview_layout" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/preview_layout" />
+
+    <TextView
+        android:id="@+id/acceleration_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="@+id/rotation_text_view"
+        app:layout_constraintTop_toBottomOf="@+id/rotation_text_view" />
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/detection_status_view"

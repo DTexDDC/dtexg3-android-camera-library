@@ -46,6 +46,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.math.sqrt
 
 class CameraFragment : Fragment(), SensorEventListener {
 
@@ -100,6 +101,10 @@ class CameraFragment : Fragment(), SensorEventListener {
     private var rotationVectorSensor: Sensor? = null
     private val rotationMatrix = FloatArray(9)
     private val rotationResult = FloatArray(3)
+    private var accelerometerSensor: Sensor? = null
+    private var accel: Float = 0.0f
+    private var accelCurrent: Float = SensorManager.GRAVITY_EARTH
+    private var accelLast: Float = SensorManager.GRAVITY_EARTH
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -112,6 +117,7 @@ class CameraFragment : Fragment(), SensorEventListener {
 
         sensorManager = requireContext().getSystemService(Context.SENSOR_SERVICE) as SensorManager
         rotationVectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+        accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
         cameraExecutor = Executors.newSingleThreadExecutor()
     }
@@ -157,7 +163,10 @@ class CameraFragment : Fragment(), SensorEventListener {
     override fun onResume() {
         super.onResume()
         rotationVectorSensor?.let { sensor ->
-            sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+            sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_UI)
+        }
+        accelerometerSensor?.let { sensor ->
+            sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_UI)
         }
     }
 
@@ -364,7 +373,16 @@ class CameraFragment : Fragment(), SensorEventListener {
             // val alpha = (-rotationResult[0]).toDouble()
             val beta = (-rotationResult[1]).toDouble()
             // val gamma = rotationResult[2].toDouble()
-            binding.rotationTextView.text = beta.toString()
+            binding.rotationTextView.text = String.format("Rotation: %f", beta)
+        } else if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
+            val x = event.values[0]
+            val y = event.values[1]
+            val z = event.values[2]
+            accelLast = accelCurrent
+            accelCurrent = sqrt(x * x + y * y + z * z)
+            val delta = accelCurrent - accelLast
+            accel = accel * 0.9f + delta
+            binding.accelerationTextView.text = String.format("Acceleration: %f", accel)
         }
     }
 
