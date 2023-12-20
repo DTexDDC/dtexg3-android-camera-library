@@ -146,7 +146,6 @@ class CameraFragment : Fragment(), SensorEventListener {
             canvas = Canvas(bitmap)
 
             paint = Paint()
-            paint.color = Color.parseColor("#00DD00")
             paint.strokeWidth = 5F
 
             binding.canvasImageView.setImageBitmap(bitmap)
@@ -310,6 +309,7 @@ class CameraFragment : Fragment(), SensorEventListener {
         // Get a stable reference of the modifiable image capture use case
         val imageCapture = imageCapture ?: return
 
+        viewModel.lastAcceptable = viewModel.isAcceptable
         val cacheDir = requireContext().cacheDir
         val fileName = SimpleDateFormat(
             "yyyy-MM-dd-HH-mm-ss-SSS",

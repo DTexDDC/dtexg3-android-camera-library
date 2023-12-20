@@ -41,7 +41,7 @@ class ReviewFragment : Fragment(), View.OnClickListener {
             R.id.done_button -> {
                 Intent().also { intent ->
                     intent.putExtra(DtexCamera.ARG_PHOTO_URI, viewModel.photoUri)
-                    intent.putExtra(DtexCamera.ARG_ACCEPTABLE, viewModel.isAcceptable)
+                    intent.putExtra(DtexCamera.ARG_ACCEPTABLE, viewModel.lastAcceptable)
                     activity?.setResult(Activity.RESULT_OK, intent)
                     activity?.finish()
                 }
