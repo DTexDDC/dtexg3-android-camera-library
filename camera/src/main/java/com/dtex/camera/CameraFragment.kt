@@ -48,7 +48,6 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import kotlin.math.min
 import kotlin.math.sqrt
 
 class CameraFragment : Fragment(), SensorEventListener {
@@ -268,42 +267,37 @@ class CameraFragment : Fragment(), SensorEventListener {
                 3 to categories
             )
             interpreter.runForMultipleInputsOutputs(inputs, outputs)
-            // Return outputs
-            Log.d(TAG, "scores: $scores")
-            Log.d(TAG, "boundingBoxes: $boundingBoxes")
-            Log.d(TAG, "detectionCount: $detectionCount")
-            Log.d(TAG, "categories: $categories")
 
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
             viewModel.isBoundingDetected = false
-            for (i in 0 until min(5, categories.size)) {
-                val sortedIndex = scores[i].indices
-                    .filter { scores[i][it] > 0.1 }
-                    .sortedWith { a, b ->
-                        when {
-                            scores[i][a] > scores[i][b] -> -1
-                            scores[i][a] < scores[i][b] -> 1
-                            else -> 0
+            scores[0].withIndex()
+                .groupBy { categories[0][it.index] }
+                .map { it.value }
+                .sortedWith { a, b ->
+                    b.maxOf { it.value }.compareTo(a.maxOf { it.value })
+                }
+                .take(5)
+                .forEachIndexed { groupIndex, groupValue ->
+                    groupValue
+                        .filter { it.value > 0.1 }
+                        .sortedWith { a, b ->
+                            b.value.compareTo(a.value)
                         }
-                    }
-                    .take(5)
-                if (sortedIndex.isNotEmpty()) {
-                    viewModel.isBoundingDetected = true
-                }
+                        .take(5)
+                        .forEach {
+                            viewModel.isBoundingDetected = true
 
-                paint.color = boundingColors[i]
-
-                sortedIndex.forEach { index ->
-                    val x1 = boundingBoxes[i][index][1] * previewWidth
-                    val y1 = boundingBoxes[i][index][0] * previewHeight
-                    val x2 = boundingBoxes[i][index][3] * previewWidth
-                    val y2 = boundingBoxes[i][index][2] * previewHeight
-                    canvas.drawLine(x1, y1, x2, y1, paint)
-                    canvas.drawLine(x2, y1, x2, y2, paint)
-                    canvas.drawLine(x2, y2, x1, y2, paint)
-                    canvas.drawLine(x1, y2, x1, y1, paint)
+                            paint.color = boundingColors[groupIndex]
+                            val x1 = boundingBoxes[0][it.index][1] * previewWidth
+                            val y1 = boundingBoxes[0][it.index][0] * previewHeight
+                            val x2 = boundingBoxes[0][it.index][3] * previewWidth
+                            val y2 = boundingBoxes[0][it.index][2] * previewHeight
+                            canvas.drawLine(x1, y1, x2, y1, paint)
+                            canvas.drawLine(x2, y1, x2, y2, paint)
+                            canvas.drawLine(x2, y2, x1, y2, paint)
+                            canvas.drawLine(x1, y2, x1, y1, paint)
+                        }
                 }
-            }
             binding.canvasImageView.invalidate()
         } catch (e: Exception) {
             e.printStackTrace()
