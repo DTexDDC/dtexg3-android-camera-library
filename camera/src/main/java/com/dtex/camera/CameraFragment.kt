@@ -16,8 +16,10 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.Surface
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -46,6 +48,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.math.min
 import kotlin.math.sqrt
 
 class CameraFragment : Fragment(), SensorEventListener {
@@ -148,15 +151,6 @@ class CameraFragment : Fragment(), SensorEventListener {
             paint.strokeWidth = 5F
 
             binding.canvasImageView.setImageBitmap(bitmap)
-        }
-
-        viewModel.isDetected.observe(viewLifecycleOwner) {
-            binding.detectionStatusView.setCardBackgroundColor(
-                ContextCompat.getColor(
-                    requireContext(),
-                    if (it) R.color.green else R.color.red
-                )
-            )
         }
     }
 
@@ -275,38 +269,42 @@ class CameraFragment : Fragment(), SensorEventListener {
             )
             interpreter.runForMultipleInputsOutputs(inputs, outputs)
             // Return outputs
-            Log.d(TAG, "scores: " + scores[0])
-            Log.d(TAG, "boundingBoxes: " + boundingBoxes[0])
-            Log.d(TAG, "detectionCount: " + detectionCount[0].toInt())
-            Log.d(TAG, "categories: " + categories[0])
+            Log.d(TAG, "scores: $scores")
+            Log.d(TAG, "boundingBoxes: $boundingBoxes")
+            Log.d(TAG, "detectionCount: $detectionCount")
+            Log.d(TAG, "categories: $categories")
 
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
-            val sortedIndex = scores[0].indices
-                .filter { scores[0][it] > 0.1 }
-                .sortedWith { a, b ->
-                    when {
-                        scores[0][a] > scores[0][b] -> -1
-                        scores[0][a] < scores[0][b] -> 1
-                        else -> 0
+            viewModel.isBoundingDetected = false
+            for (i in 0 until min(5, categories.size)) {
+                val sortedIndex = scores[i].indices
+                    .filter { scores[i][it] > 0.1 }
+                    .sortedWith { a, b ->
+                        when {
+                            scores[i][a] > scores[i][b] -> -1
+                            scores[i][a] < scores[i][b] -> 1
+                            else -> 0
+                        }
                     }
+                    .take(5)
+                if (sortedIndex.isNotEmpty()) {
+                    viewModel.isBoundingDetected = true
                 }
-                .take(5)
-            if (sortedIndex.isEmpty()) {
-                viewModel.isDetected.postValue(false)
-            } else {
-                viewModel.isDetected.postValue(true)
+
+                paint.color = boundingColors[i]
+
                 sortedIndex.forEach { index ->
-                    val x1 = boundingBoxes[0][index][1] * previewWidth
-                    val y1 = boundingBoxes[0][index][0] * previewHeight
-                    val x2 = boundingBoxes[0][index][3] * previewWidth
-                    val y2 = boundingBoxes[0][index][2] * previewHeight
+                    val x1 = boundingBoxes[i][index][1] * previewWidth
+                    val y1 = boundingBoxes[i][index][0] * previewHeight
+                    val x2 = boundingBoxes[i][index][3] * previewWidth
+                    val y2 = boundingBoxes[i][index][2] * previewHeight
                     canvas.drawLine(x1, y1, x2, y1, paint)
                     canvas.drawLine(x2, y1, x2, y2, paint)
                     canvas.drawLine(x2, y2, x1, y2, paint)
                     canvas.drawLine(x1, y2, x1, y1, paint)
                 }
-                binding.canvasImageView.invalidate()
             }
+            binding.canvasImageView.invalidate()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -366,14 +364,40 @@ class CameraFragment : Fragment(), SensorEventListener {
         )
     }
 
+    private fun updateStatusColor() {
+        val orientation = getOrientation()
+        if (orientation != 0 || viewModel.rotation < 0.5 || !viewModel.isBoundingDetected) {
+            binding.detectionStatusView.setCardBackgroundColor(
+                ContextCompat.getColor(requireContext(), R.color.red)
+            )
+        } else {
+            binding.detectionStatusView.setCardBackgroundColor(
+                ContextCompat.getColor(requireContext(), R.color.green)
+            )
+        }
+    }
+
+    private fun getOrientation(): Int {
+        val windowManager = context?.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
+        return when (windowManager?.defaultDisplay?.rotation) {
+            Surface.ROTATION_0 -> 0
+            Surface.ROTATION_90 -> 90
+            Surface.ROTATION_180 -> 180
+            Surface.ROTATION_270 -> -90
+            else -> 0
+        }
+    }
+
     override fun onSensorChanged(event: SensorEvent?) {
         if (event?.sensor?.type == Sensor.TYPE_ROTATION_VECTOR) {
             SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
             SensorManager.getOrientation(rotationMatrix, rotationResult)
             // val alpha = (-rotationResult[0]).toDouble()
-            val beta = (-rotationResult[1]).toDouble()
+            val beta = -rotationResult[1]
             // val gamma = rotationResult[2].toDouble()
+            viewModel.rotation = beta
             binding.rotationTextView.text = String.format("Rotation: %f", beta)
+            updateStatusColor()
         } else if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
             val x = event.values[0]
             val y = event.values[1]
@@ -382,7 +406,9 @@ class CameraFragment : Fragment(), SensorEventListener {
             accelCurrent = sqrt(x * x + y * y + z * z)
             val delta = accelCurrent - accelLast
             accel = accel * 0.9f + delta
+            viewModel.acceleration = accel
             binding.accelerationTextView.text = String.format("Acceleration: %f", accel)
+            updateStatusColor()
         }
     }
 
@@ -406,5 +432,12 @@ class CameraFragment : Fragment(), SensorEventListener {
                     add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 }
             }.toTypedArray()
+        private val boundingColors = arrayOf(
+            Color.parseColor("#ff4500"),
+            Color.parseColor("#7eda3b"),
+            Color.parseColor("#ffff00"),
+            Color.parseColor("#990099"),
+            Color.parseColor("#ff7f50")
+        )
     }
 }
