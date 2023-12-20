@@ -365,14 +365,14 @@ class CameraFragment : Fragment(), SensorEventListener {
     }
 
     private fun updateStatusColor() {
-        val orientation = getOrientation()
-        if (orientation != 0 || viewModel.rotation < 0.5 || !viewModel.isBoundingDetected) {
+        viewModel.orientation = getOrientation()
+        if (viewModel.isAcceptable) {
             binding.detectionStatusView.setCardBackgroundColor(
-                ContextCompat.getColor(requireContext(), R.color.red)
+                ContextCompat.getColor(requireContext(), R.color.green)
             )
         } else {
             binding.detectionStatusView.setCardBackgroundColor(
-                ContextCompat.getColor(requireContext(), R.color.green)
+                ContextCompat.getColor(requireContext(), R.color.red)
             )
         }
     }

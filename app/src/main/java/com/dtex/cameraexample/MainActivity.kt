@@ -1,7 +1,6 @@
 package com.dtex.cameraexample
 
 import android.app.Activity
-import android.net.Uri
 import android.os.Bundle
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -16,8 +15,10 @@ class MainActivity : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 val data = result.data
-                val photoUri: Uri? = DtexCamera.getPhotoUri(data)
-                binding.imageView.setImageURI(photoUri)
+                val res = DtexCamera.getResult(data)
+                binding.imageView.setImageURI(res?.photoUri)
+                binding.resultTextView.text =
+                    String.format("Status: %s", if (res?.isAcceptable == true) "Green" else "Red")
             }
         }
 

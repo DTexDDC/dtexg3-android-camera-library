@@ -9,9 +9,15 @@ import com.dtex.camera.extensions.parcelable
 
 open class DtexCamera {
 
+    data class Result(
+        var photoUri: Uri?,
+        var isAcceptable: Boolean
+    )
+
     companion object {
         internal const val ARG_MODEL_FILE_NAME = "model_file_name"
         internal const val ARG_PHOTO_URI = "photo_uri"
+        internal const val ARG_ACCEPTABLE = "is_acceptable"
 
         @JvmStatic
         fun with(activity: Activity): Builder {
@@ -24,8 +30,13 @@ open class DtexCamera {
         }
 
         @JvmStatic
-        fun getPhotoUri(data: Intent?): Uri? {
-            return data?.parcelable(ARG_PHOTO_URI)
+        fun getResult(data: Intent?): Result? {
+            return data?.run {
+                Result(
+                    photoUri = parcelable(ARG_PHOTO_URI),
+                    isAcceptable = getBooleanExtra(ARG_ACCEPTABLE, false)
+                )
+            }
         }
     }
 
