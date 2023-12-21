@@ -10,7 +10,7 @@ class CameraViewModel : ViewModel() {
 
     // Status
     val isAcceptable: Boolean
-        get() = orientation == 0 && isBoundingDetected && rotation > 0.5 && acceleration < 3
+        get() = orientation == 0 && isBoundingDetected && rotation > 0.5 && acceleration < 0.3
     var isBoundingDetected: Boolean = false
     var orientation: Int = 0    // Device orientation
     var rotation: Float = 0.0f  // [-π/2, π/2]
