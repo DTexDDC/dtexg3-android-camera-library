@@ -37,7 +37,7 @@ Step 2. Add the dependency
 ````
 dependencies {
     ...
-    implementation 'com.github.DTexDDC:dtexg3-android-camera-library:0.0.1'
+    implementation 'com.github.DTexDDC:dtexg3-android-camera-library:0.0.2'
 }
 ````
 
@@ -45,25 +45,31 @@ dependencies {
 ````
 dependencies {
     ...
-    implementation ("com.github.DTexDDC:dtexg3-android-camera-library:0.0.1")
+    implementation ("com.github.DTexDDC:dtexg3-android-camera-library:0.0.2")
 }
 ````
 
 # Usage
-Step 1. Register a callback for an activity result
+Step 1. Copy the tflite model file to `assets` folder
+
+Step 2. Register a callback for an activity result
 ````
 private val cameraLauncher =
     registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             val data = result.data
-            val photoUri: Uri? = data?.getParcelableExtra("photoUri")
+            val res = DtexCamera.getResult(data)
+            val photoUri: Uri? = res?.photoUri
             // TODO: Handle photo uri
         }
     }
 ````
 
-Step 2. Launch camera activity
+Step 3. Launch camera activity
 ````
-val intent = Intent(this, CameraActivity::class.java)
-cameraLauncher.launch(intent)
+DtexCamera.with(this)
+    .modelFile("modelfilename.tflite")
+    .createIntent { intent ->
+        cameraLauncher.launch(intent)
+    }
 ````
