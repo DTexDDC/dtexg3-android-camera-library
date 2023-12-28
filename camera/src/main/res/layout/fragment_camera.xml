@@ -40,6 +40,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
         android:textSize="14sp"
+        android:visibility="gone"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/preview_layout" />
 
@@ -49,6 +50,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:textSize="14sp"
+        android:visibility="gone"
         app:layout_constraintStart_toStartOf="@+id/rotation_text_view"
         app:layout_constraintTop_toBottomOf="@+id/rotation_text_view" />
 

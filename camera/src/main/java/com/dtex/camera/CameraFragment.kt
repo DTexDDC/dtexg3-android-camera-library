@@ -73,9 +73,6 @@ class CameraFragment : Fragment(), SensorEventListener {
     private lateinit var cameraExecutor: ExecutorService
 
     private lateinit var interpreter: Interpreter
-    private val inputSize = 512
-    private val detectionsSize = 25
-    private var isProcessing = false
 
     private val previewWidth: Int by lazy {
         resources.displayMetrics.widthPixels
@@ -101,12 +98,7 @@ class CameraFragment : Fragment(), SensorEventListener {
 
     private lateinit var sensorManager: SensorManager
     private var rotationVectorSensor: Sensor? = null
-    private val rotationMatrix = FloatArray(9)
-    private val rotationResult = FloatArray(3)
     private var accelerometerSensor: Sensor? = null
-    private var accel: Float = 0.0f
-    private var accelCurrent: Float = SensorManager.GRAVITY_EARTH
-    private var accelLast: Float = SensorManager.GRAVITY_EARTH
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -218,7 +210,7 @@ class CameraFragment : Fragment(), SensorEventListener {
                 .build()
                 .also {
                     it.setAnalyzer(cameraExecutor) { image ->
-                        if (isProcessing) return@setAnalyzer
+                        if (viewModel.isProcessing) return@setAnalyzer
                         processFrame(image)
                     }
                 }
@@ -241,7 +233,7 @@ class CameraFragment : Fragment(), SensorEventListener {
     }
 
     private fun processFrame(image: ImageProxy) {
-        isProcessing = true
+        viewModel.isProcessing = true
         try {
             // Convert image to bitmap
             val bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
@@ -250,15 +242,21 @@ class CameraFragment : Fragment(), SensorEventListener {
             val imageRotation = image.imageInfo.rotationDegrees
             val imageProcessor = ImageProcessor.Builder()
                 .add(Rot90Op(-imageRotation / 90))
-                .add(ResizeOp(inputSize, inputSize, ResizeOp.ResizeMethod.NEAREST_NEIGHBOR))
+                .add(
+                    ResizeOp(
+                        viewModel.inputSize,
+                        viewModel.inputSize,
+                        ResizeOp.ResizeMethod.NEAREST_NEIGHBOR
+                    )
+                )
                 .build()
             // Create inputs and outputs and invoke model
             val tensorImage = imageProcessor.process(TensorImage.fromBitmap(bitmap))
             val inputs = arrayOf(tensorImage.buffer)
-            val scores = arrayOf(FloatArray(detectionsSize))
-            val boundingBoxes = arrayOf(Array(detectionsSize) { FloatArray(4) })
+            val scores = arrayOf(FloatArray(viewModel.detectionsSize))
+            val boundingBoxes = arrayOf(Array(viewModel.detectionsSize) { FloatArray(4) })
             val detectionCount = FloatArray(1)
-            val categories = arrayOf(FloatArray(detectionsSize))
+            val categories = arrayOf(FloatArray(viewModel.detectionsSize))
             val outputs = mapOf(
                 0 to scores,
                 1 to boundingBoxes,
@@ -278,7 +276,7 @@ class CameraFragment : Fragment(), SensorEventListener {
                 .take(5)
                 .forEachIndexed { groupIndex, groupValue ->
                     groupValue
-                        .filter { it.value > 0.1 }
+                        .filter { it.value > viewModel.detectionConfidence }
                         .sortedWith { a, b ->
                             b.value.compareTo(a.value)
                         }
@@ -302,7 +300,8 @@ class CameraFragment : Fragment(), SensorEventListener {
             e.printStackTrace()
         }
         image.close()
-        isProcessing = false
+        updateStatusColor()
+        viewModel.isProcessing = false
     }
 
     private fun takePhoto() {
@@ -384,10 +383,10 @@ class CameraFragment : Fragment(), SensorEventListener {
 
     override fun onSensorChanged(event: SensorEvent?) {
         if (event?.sensor?.type == Sensor.TYPE_ROTATION_VECTOR) {
-            SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
-            SensorManager.getOrientation(rotationMatrix, rotationResult)
+            SensorManager.getRotationMatrixFromVector(viewModel.rotationMatrix, event.values)
+            SensorManager.getOrientation(viewModel.rotationMatrix, viewModel.rotationResult)
             // val alpha = (-rotationResult[0]).toDouble()
-            val beta = -rotationResult[1]
+            val beta = -viewModel.rotationResult[1]
             // val gamma = rotationResult[2].toDouble()
             viewModel.rotation = beta
             binding.rotationTextView.text = String.format("Rotation: %f", beta)
@@ -396,12 +395,12 @@ class CameraFragment : Fragment(), SensorEventListener {
             val x = event.values[0]
             val y = event.values[1]
             val z = event.values[2]
-            accelLast = accelCurrent
-            accelCurrent = sqrt(x * x + y * y + z * z)
-            val delta = accelCurrent - accelLast
-            accel = accel * 0.9f + delta
-            viewModel.acceleration = accel
-            binding.accelerationTextView.text = String.format("Acceleration: %f", accel)
+            viewModel.accelLast = viewModel.accelCurrent
+            viewModel.accelCurrent = sqrt(x * x + y * y + z * z)
+            val delta = viewModel.accelCurrent - viewModel.accelLast
+            viewModel.accel = viewModel.accel * 0.9f + delta
+            viewModel.acceleration = viewModel.accel
+            binding.accelerationTextView.text = String.format("Acceleration: %f", viewModel.accel)
             updateStatusColor()
         }
     }
