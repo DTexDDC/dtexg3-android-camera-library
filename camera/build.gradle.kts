@@ -82,7 +82,7 @@ afterEvaluate {
             register<MavenPublication>("release") {
                 groupId = "com.github.DTexDDC"
                 artifactId = "dtexg3-android-camera-library"
-                version = "0.0.1"
+                version = "0.0.2"
 
                 afterEvaluate {
                     from(components["release"])
