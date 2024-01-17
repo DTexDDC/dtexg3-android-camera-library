@@ -427,10 +427,11 @@ class CameraFragment : Fragment(), SensorEventListener {
             }.toTypedArray()
         private val boundingColors = arrayOf(
             Color.parseColor("#ff4500"),
-            Color.parseColor("#7eda3b"),
-            Color.parseColor("#ffff00"),
-            Color.parseColor("#990099"),
-            Color.parseColor("#ff7f50")
+            Color.parseColor("#ff5414"),
+            Color.parseColor("#ff652b"),
+            Color.parseColor("#fa7543"),
+            Color.parseColor("#ff8a5e"),
+            Color.parseColor("#fa946e")
         )
     }
 }

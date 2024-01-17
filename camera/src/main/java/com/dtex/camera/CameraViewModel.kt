@@ -11,7 +11,7 @@ class CameraViewModel : ViewModel() {
 
     // Config
     val detectionConfidence = 0.7
-    private val rotationConfidence = 1.0
+    private val rotationConfidence = 1.2
     private val accelerationLimit = 0.3
 
     // TensorFlow Lite
