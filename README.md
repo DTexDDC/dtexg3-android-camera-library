@@ -3,9 +3,11 @@
 Camera library for Dtex
 
 # Installation
+
 Step 1. Add the JitPack repository to your build file
 
 <b>Groovy</b>
+
 ````
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
@@ -19,6 +21,7 @@ dependencyResolutionManagement {
 ````
 
 <b>Kotlin</b>
+
 ````
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
@@ -34,25 +37,29 @@ dependencyResolutionManagement {
 Step 2. Add the dependency
 
 <b>Groovy</b>
+
 ````
 dependencies {
     ...
-    implementation 'com.github.DTexDDC:dtexg3-android-camera-library:0.0.2'
+    implementation 'com.github.DTexDDC:dtexg3-android-camera-library:0.0.3'
 }
 ````
 
 <b>Kotlin</b>
+
 ````
 dependencies {
     ...
-    implementation ("com.github.DTexDDC:dtexg3-android-camera-library:0.0.2")
+    implementation ("com.github.DTexDDC:dtexg3-android-camera-library:0.0.3")
 }
 ````
 
 # Usage
+
 Step 1. Copy the tflite model file to `assets` folder
 
 Step 2. Register a callback for an activity result
+
 ````
 private val cameraLauncher =
     registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -66,6 +73,7 @@ private val cameraLauncher =
 ````
 
 Step 3. Launch camera activity
+
 ````
 DtexCamera.with(this)
     .modelFile("modelfilename.tflite")
