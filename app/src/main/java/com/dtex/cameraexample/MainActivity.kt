@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.cameraButton.setOnClickListener {
             DtexCamera.with(this)
-                .modelFile("model.tflite")
+                .modelFile("shelf.tflite")
                 .createIntent { intent ->
                     cameraLauncher.launch(intent)
                 }
