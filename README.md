@@ -41,7 +41,7 @@ Step 2. Add the dependency
 ````
 dependencies {
     ...
-    implementation 'com.github.DTexDDC:dtexg3-android-camera-library:0.0.3'
+    implementation 'com.github.DTexDDC:dtexg3-android-camera-library:0.0.4'
 }
 ````
 
@@ -50,7 +50,7 @@ dependencies {
 ````
 dependencies {
     ...
-    implementation ("com.github.DTexDDC:dtexg3-android-camera-library:0.0.3")
+    implementation ("com.github.DTexDDC:dtexg3-android-camera-library:0.0.4")
 }
 ````
 
@@ -82,6 +82,7 @@ DtexCamera.with(this)
         cameraLauncher.launch(intent)
     }
 ````
+
 # API
 
 ### modelFile(filename): Required
