@@ -30,6 +30,7 @@ class MainActivity : AppCompatActivity() {
         binding.cameraButton.setOnClickListener {
             DtexCamera.with(this)
                 .modelFile("shelf.tflite")
+                .setDetectionConfidence(0.3)
                 .createIntent { intent ->
                     cameraLauncher.launch(intent)
                 }

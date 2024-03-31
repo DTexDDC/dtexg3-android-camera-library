@@ -16,6 +16,7 @@ open class DtexCamera {
 
     companion object {
         internal const val ARG_MODEL_FILE_NAME = "model_file_name"
+        internal const val ARG_DETECTION_CONFIDENCE = "detection_confidence"
         internal const val ARG_PHOTO_URI = "photo_uri"
         internal const val ARG_ACCEPTABLE = "is_acceptable"
 
@@ -45,6 +46,7 @@ open class DtexCamera {
         private var fragment: Fragment? = null
 
         private var assetFileName: String? = null
+        private var detectionConfidence: Double? = null
 
         constructor(fragment: Fragment) : this(fragment.requireActivity()) {
             this.fragment = fragment
@@ -52,6 +54,11 @@ open class DtexCamera {
 
         fun modelFile(fileName: String): Builder {
             this.assetFileName = fileName
+            return this
+        }
+
+        fun setDetectionConfidence(detectionConfidence: Double): Builder {
+            this.detectionConfidence = detectionConfidence
             return this
         }
 
@@ -64,6 +71,9 @@ open class DtexCamera {
         private fun getBundle(): Bundle {
             return Bundle().apply {
                 putString(ARG_MODEL_FILE_NAME, assetFileName)
+                detectionConfidence?.let {
+                    putDouble(ARG_DETECTION_CONFIDENCE, it)
+                }
             }
         }
     }

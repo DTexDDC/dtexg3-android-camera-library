@@ -14,5 +14,10 @@ class CameraActivity : AppCompatActivity() {
 
         // Load bundle
         viewModel.assetFileName = intent.getStringExtra(DtexCamera.ARG_MODEL_FILE_NAME)
+        intent.getDoubleExtra(DtexCamera.ARG_DETECTION_CONFIDENCE, -1.0).let {
+            if (it > 0) {
+                viewModel.detectionConfidence = it
+            }
+        }
     }
 }

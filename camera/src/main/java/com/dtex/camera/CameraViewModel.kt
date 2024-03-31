@@ -10,7 +10,7 @@ class CameraViewModel : ViewModel() {
     var photoUri: Uri? = null
 
     // Config
-    val detectionConfidence = 0.7
+    var detectionConfidence = 0.7
     private val rotationConfidence = 1.2
     private val accelerationLimit = 0.3
 
