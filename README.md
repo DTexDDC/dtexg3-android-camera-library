@@ -77,7 +77,17 @@ Step 3. Launch camera activity
 ````
 DtexCamera.with(this)
     .modelFile("modelfilename.tflite")
+    .setDetectionConfidence(0.5)
     .createIntent { intent ->
         cameraLauncher.launch(intent)
     }
 ````
+# API
+
+### modelFile(filename): Required
+
+Set tflite model file name
+
+### setDetectionConfidence(value): Optional
+
+Set detection confidence criteria value. Default value is 0.7
